@@ -1,5 +1,5 @@
-import numpy as np
-import cv2
+import pyrtools as pt
 
-def decompose_frames(frames):
-    return frames - np.mean(frames, axis=0)  # Simple normalization
+def build_pyramid(frame, height=4, order=3):
+    pyr = pt.pyramids.SteerablePyramidSpace(frame, height=height, order=order)
+    return pyr.pyr_coeffs

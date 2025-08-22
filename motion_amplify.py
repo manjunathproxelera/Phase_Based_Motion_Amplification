@@ -1,38 +1,35 @@
 from src.video_loader import load_video
-from src.phase_decomposition import decompose_frames
-from src.temporal_filter import temporal_bandpass
+from src.phase_decomposition import build_pyramid
+from src.temporal_filter import apply_bandpass
 from src.amplifier import amplify_motion
 from src.reconstructor import save_video
-from src.tracker import track_pixel_motion
-from frequency_analysis import analyze_frequency
+from src.frequency_analysis import save_frequency_spectrum
 
-VIDEO_PATH = "input/camera.mp4"
-OUTPUT_PATH = "output/amplified.mp4"
-FPS = 30
-AMPLIFICATION_FACTOR = 20
-FREQ_RANGE = (0.5, 2.0)  # human breathing
+# --- Parameters ---
+video_path = "input/car_input_f50-650_50FPS-remove120.mp4"
+output_path = "output/amplified_motion.mp4"
+fps = 50
+low_freq, high_freq = 50.0, 650.0
+amplification_factor = 30
+spectrum_path = "output/motion_spectrum.png"
+phase_path = "output/motion_phase.png"
 
-def main():
-    #Load Video
-    frames = load_video(VIDEO_PATH, gray=True)
-    print("Video Loaded:", frames.shape)
+print("Loading video...")
+frames = load_video(video_path, gray=True, normalize=True)
+print(f"Loaded {len(frames)} frames, shape: {frames.shape}")
 
-    #Phase Decomposition
-    decomposed = decompose_frames(frames)
+_ = build_pyramid(frames[0])
 
-    #Temporal Filtering
-    filtered = temporal_bandpass(decomposed, fps=FPS, freq_range=FREQ_RANGE)
+print("Analyzing frequency spectrum...")
+save_frequency_spectrum(frames, fps, spectrum_path, phase_path, pixel_coords=(100,100))
 
-    #Amplification
-    amplified = amplify_motion(filtered, amplification_factor=AMPLIFICATION_FACTOR)
+print("Applying temporal bandpass filter...")
+filtered_frames = apply_bandpass(frames, low_freq, high_freq, fps)
 
-    #Reconstruct Video
-    save_video(amplified, OUTPUT_PATH, fps=FPS)
-    print("Amplified video saved at:", OUTPUT_PATH)
+print("Amplifying motion...")
+amplified_frames = amplify_motion(frames, filtered_frames, amplification_factor)
 
-    #Motion Tracking (single pixel)
-    signal = track_pixel_motion(frames)
-    analyze_frequency(signal, fps=FPS, save_prefix="output/motion")
+print("Saving video...")
+save_video(amplified_frames, output_path, fps)
 
-if __name__ == "__main__":
-    main()
+print(f"Done! Output saved to {output_path}")
