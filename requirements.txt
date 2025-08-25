@@ -4,3 +4,5 @@ imageio
 scipy
 pyrtools
 matplotlib
+imageio[ffmpeg]
+imageio[pyav]
